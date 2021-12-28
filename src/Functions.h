@@ -24,6 +24,13 @@
 
 using namespace std;
 
+const int ROW_SIZE = 50; // CONST - Used to set the row size of the game map array.
+const int COL_SIZE = 50; // CONST - Used to set the column size of the game map array.
+
 // Function Prototypes
+
+// Prototype description goes here...
+int LocationsFromFile(int binaryDigit);
+
 
 #endif /* Functions_h */

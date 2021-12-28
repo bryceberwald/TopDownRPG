@@ -26,6 +26,7 @@ int main(int argc, char* argv[])
     string NEW_WORKING_DIR = string(cwd) + "/";
     chdir(NEW_WORKING_DIR.c_str());
     
+    // Variables used for establishing monitor dimensions.
     int MonitorWidth  = GetMonitorWidth(0);
     int MonitorHeight = GetMonitorHeight(0);
     
@@ -41,11 +42,21 @@ int main(int argc, char* argv[])
     Texture2D PlayerRight = LoadTexture("resources/characters/player/player_right.png");
     Texture2D PlayerUp = LoadTexture("resources/characters/player/player_up.png");
     Texture2D PlayerDown = LoadTexture("resources/characters/player/player_down.png");
-    Texture2D Map1 = LoadTexture("resources/maps/map1.png");
+    Texture2D Map1 = LoadTexture("resources/maps/map1/map1.png");
 
     // Create a Interchangable Texture2D for the player.
     Texture2D Character = PlayerDown;
+
+    // String used for creating binary locations into an integer array.
+    string inputFileName = "resources/maps/map1/map1.txt";
+
+    // Array to hold blocked locations in integer format.
+    int GameMapArray[ROW_SIZE][COL_SIZE];  // 50 x 50 for map sizing. (Tiles are 32x32 in size)
+
+    // Variable used for reading binary numbers from input file.
+    int binaryDigit;
    
+    // Variables used for establishing screen dimensions.
     int ScreenWidth  = GetScreenWidth();
     int ScreenHeight = GetScreenHeight();
 
@@ -60,7 +71,30 @@ int main(int argc, char* argv[])
     // Used to check if player is walking.
     bool walking = true;
 
+    // Set the game FPS.
     SetTargetFPS(60);
+
+    // Save Binary Locations to integer array to be used later for creating blocked locations of rec type.
+    ifstream inFile;
+    inFile.open(inputFileName);
+    int rowCounter = 0;
+    if (inFile.is_open()) {
+        while (inFile) {
+            for(int i = 0; i < 50; i++){
+                inFile >> binaryDigit;
+                GameMapArray[rowCounter][i] = LocationsFromFile(binaryDigit);
+            }
+            rowCounter++;
+        }
+    }
+
+    // Display multi-dimensional array to the console for debugging purposes.
+    for (int i = 0; i < 50; i++) {
+        for (int k = 0; k < 50; k++) {
+            cout << GameMapArray[i][k];
+        }
+        cout << endl;
+    }
 
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
@@ -142,6 +176,9 @@ int main(int argc, char* argv[])
     UnloadTexture(PlayerRight);
     UnloadTexture(PlayerUp);
     UnloadTexture(PlayerDown);
+
+    UnloadTexture(Character);
+    UnloadTexture(Map1);
 
     CloseWindow();                // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
