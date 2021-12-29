@@ -17,15 +17,18 @@
 #include <ostream>
 #include <sstream>
 #include <fstream>
+#include <vector>
 
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
-
+using std::vector; 
 using namespace std;
 
 const int ROW_SIZE = 50; // CONST - Used to set the row size of the game map array.
 const int COL_SIZE = 50; // CONST - Used to set the column size of the game map array.
+
+const int TOTAL_BLOCKED_LOCATIONS = 100;
 
 // Function Prototypes
 

@@ -53,6 +53,12 @@ int main(int argc, char* argv[])
     // Array to hold blocked locations in integer format.
     int GameMapArray[ROW_SIZE][COL_SIZE];  // 50 x 50 for map sizing. (Tiles are 32x32 in size)
 
+    // Array is used to hold all blocked locations of type rectangle.
+    Rectangle BlockedLocations[TOTAL_BLOCKED_LOCATIONS];
+
+    // Variable holds the number of blocked locations in total.
+    int totalBlockedLocations = 0;
+
     // Variable used for reading binary numbers from input file.
     int binaryDigit;
    
@@ -109,6 +115,13 @@ int main(int argc, char* argv[])
         // Variables used for draw coordinates for rectangles on blocked locations.
         int recPositionX = 0;
         int recPositionY = 0;
+
+        // Variables used for int to float conversion purposes.
+        float PlayerXfloat = PlayerX;
+        float PlayerYfloat = PlayerY;
+
+        // Variable holds the rectangle that surrounds the player at all times.
+         Rectangle PlayerRec = {PlayerXfloat, PlayerYfloat, 40, 55};
         
         // NOTE: Texture is scaled twice its size, so it sould be considered on scrolling
         
@@ -132,12 +145,17 @@ int main(int argc, char* argv[])
             for (int k = 0; k < COL_SIZE; k++) {
                 if(GameMapArray[i][k] == 1){
                     DrawRectangle(recPositionX, recPositionY, 32, 32, RED);
+                    float recPositionXfloat = recPositionX;
+                    float recPositionYfloat = recPositionY;
+                    BlockedLocations[totalBlockedLocations] = {recPositionXfloat, recPositionYfloat, 32, 32};
+                    totalBlockedLocations++;
                 }
                 recPositionX += 32;
             }
             recPositionX = 0;
             recPositionY += 32;
         }
+
 
         // Check if player is currently walking or not.
         if (walking){
@@ -161,6 +179,29 @@ int main(int argc, char* argv[])
         } 
         
         EndMode2D();
+
+        // Check for player colliding into blocked rectangle locations.
+        for (int i = 0; i < totalBlockedLocations; i++) {
+
+            if(CheckCollisionRecs(BlockedLocations[i], PlayerRec) & IsKeyDown(KEY_UP)){
+                DrawText("COLLISION!!!", 300, 300, 30, BLUE);
+                PlayerY += 5;
+                CameraY += 15;
+            } else if (CheckCollisionRecs(BlockedLocations[i], PlayerRec) & IsKeyDown(KEY_DOWN)){
+                DrawText("COLLISION!!!", 300, 300, 30, BLUE);
+                PlayerY -= 5;
+                CameraY -= 15;
+            } else if (CheckCollisionRecs(BlockedLocations[i], PlayerRec) & IsKeyDown(KEY_LEFT)){
+                DrawText("COLLISION!!!", 300, 300, 30, BLUE);
+                PlayerX -= 5;
+                CameraX -= 15;
+            } else if (CheckCollisionRecs(BlockedLocations[i], PlayerRec) & IsKeyDown(KEY_RIGHT)){
+                DrawText("COLLISION!!!", 300, 300, 30, BLUE);
+                PlayerY += 5;
+                CameraY += 15;
+            }
+
+        }
 
         // Draw Gaming menu template with rectangles around screen edges.
         DrawRectangle(0, 0, ScreenWidth, 50, DARKBROWN);                  // Top
