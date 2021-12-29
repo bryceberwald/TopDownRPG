@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
     int rowCounter = 0;
     if (inFile.is_open()) {
         while (inFile) {
-            for(int i = 0; i < 50; i++){
+            for(int i = 0; i < COL_SIZE; i++){
                 inFile >> binaryDigit;
                 GameMapArray[rowCounter][i] = LocationsFromFile(binaryDigit);
             }
@@ -89,8 +89,8 @@ int main(int argc, char* argv[])
     }
 
     // Display multi-dimensional array to the console for debugging purposes.
-    for (int i = 0; i < 50; i++) {
-        for (int k = 0; k < 50; k++) {
+    for (int i = 0; i < ROW_SIZE; i++) {
+        for (int k = 0; k < COL_SIZE; k++) {
             cout << GameMapArray[i][k];
         }
         cout << endl;
@@ -105,6 +105,10 @@ int main(int argc, char* argv[])
 
         // Declaration for the Camera2D.
         Camera2D Camera = {{ CameraX, CameraY }, { CameraX, CameraY }, 0.0f, 1.5f };
+
+        // Variables used for draw coordinates for rectangles on blocked locations.
+        int recPositionX = 0;
+        int recPositionY = 0;
         
         // NOTE: Texture is scaled twice its size, so it sould be considered on scrolling
         
@@ -122,6 +126,18 @@ int main(int argc, char* argv[])
 
         // Draw player to the screen.
         DrawTexture(Character, PlayerX, PlayerY, WHITE);
+
+        // Draw blocked locations for map #1.
+        for (int i = 0; i < ROW_SIZE; i++) {
+            for (int k = 0; k < COL_SIZE; k++) {
+                if(GameMapArray[i][k] == 1){
+                    DrawRectangle(recPositionX, recPositionY, 32, 32, RED);
+                }
+                recPositionX += 32;
+            }
+            recPositionX = 0;
+            recPositionY += 32;
+        }
 
         // Check if player is currently walking or not.
         if (walking){
