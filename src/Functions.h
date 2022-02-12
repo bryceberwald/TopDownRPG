@@ -25,10 +25,17 @@
 using std::vector; 
 using namespace std;
 
+enum Boundary {
+    NONE,
+    MAP_1,
+    MAP_2,
+    MAP_3,
+};
+
 const int ROW_SIZE = 50; // CONST - Used to set the row size of the game map array.
 const int COL_SIZE = 50; // CONST - Used to set the column size of the game map array.
 
-const int TOTAL_BLOCKED_LOCATIONS = 100;
+const int TOTAL_BLOCKED_LOCATIONS = 50;
 
 // Function Prototypes
 
