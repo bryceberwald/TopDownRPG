@@ -10,6 +10,13 @@
 
 // Pre-processor directives
 #include "../include/raylib.h"
+#include <cstdlib>
+#include <chrono>
+#include <ctime>
+#include <math.h>
+
+#include <stdlib.h> // For random numbers to be generated
+#include <cctype>   // For toUpper() function to be used
 
 #include <iostream>
 #include <iomanip>
@@ -24,6 +31,7 @@
 #include <stdio.h>
 using std::vector; 
 using namespace std;
+using namespace std::chrono;
 
 enum Boundary {
     NONE,
@@ -41,6 +49,5 @@ const int TOTAL_BLOCKED_LOCATIONS = 50;
 
 // Prototype description goes here...
 int LocationsFromFile(int binaryDigit);
-
 
 #endif /* Functions_h */
