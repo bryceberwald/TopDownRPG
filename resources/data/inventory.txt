@@ -1,0 +1,7 @@
+***CURRENCY***
+0
+***ITEMS***
+blue_sword 
+0
+hp_potion
+3

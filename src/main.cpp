@@ -6,6 +6,7 @@
  **************************************************************/
 
 #include "Functions.h"
+#include "BlueFurry.h"
 
 int main(int argc, char* argv[])
 {
@@ -25,55 +26,72 @@ int main(int argc, char* argv[])
     }
     string NEW_WORKING_DIR = string(cwd) + "/";
     chdir(NEW_WORKING_DIR.c_str());
+
+    /* initialize random seed: */
+    srand (time(NULL));
     
     // Initialization
     //--------------------------------------------------------------------------------------
-
     InitWindow(1280, 720, "Savages | Version 0.0.1");
 
-    // NOTE: Textures MUST be loaded after Window initialization (OpenGL context is required)
+    int ScreenWidth  = GetScreenWidth();
+    int ScreenHeight = GetScreenHeight();
 
-    // Load Textures & Store into Texture2D Variables.
+    // NOTE: Textures MUST be loaded after Window initialization (OpenGL context is required)
+    
+    // GUI layout textures.
+    Texture2D PreGameBackground = LoadTexture("resources/GUI/start-menu.png");
+    Texture2D InGameBackground = LoadTexture("resources/GUI/background.png");
+    GameMenuScreen CurrentScreenDisplay = PreGameScreen;
+
+    Texture2D BigButtonPressed = LoadTexture("resources/GUI/buttons/big_button_pressed.png");
+    Texture2D BigButtonUnpressed = LoadTexture("resources/GUI/buttons/big_button_unpressed.png");
+    Texture2D CurrentButtonTexture = BigButtonUnpressed;
+
+    InGameMenuOptions CurrentMenuOptions = INVENTORY;
 
     // Player Textures
-    Texture2D PlayerLeft = LoadTexture("resources/characters/player/player_left.png");
-    Texture2D PlayerRight = LoadTexture("resources/characters/player/player_right.png");
-    Texture2D PlayerUp = LoadTexture("resources/characters/player/player_up.png");
-    Texture2D PlayerDown = LoadTexture("resources/characters/player/player_down.png");
-    
-    // Create a Interchangable Texture2D for the player.
-    Texture2D Character = PlayerDown;
+    Texture2D HumanSpriteSheet = LoadTexture("resources/characters/human_spritesheet.png");
+    Texture2D DemonSpriteSheet = LoadTexture("resources/characters/demon_spritesheet.png");
+    Texture2D CurrentSpriteSheet = DemonSpriteSheet;
+
+    // Array of 10 Blue Furry Monsters on Village North Map.
+    const int MAX_BLUE_FURRYS = 20;
+    BlueFurry BlueFurryArray[MAX_BLUE_FURRYS];
+
+    // Variable determines which direction player is facing.
+    char CharacterDirection = 'S';
+
+    // Control Player X & Y coordinates with these variables.
+    int PlayerX = ScreenWidth / 2;
+    int PlayerY = 200; 
+
+    /*  Variables to control Player-Animation */
+    float FrameX = (float)CurrentSpriteSheet.width/8;
+    float FrameY = (float)CurrentSpriteSheet.height/8;
+
+    Rectangle frameRec = { 0.0f, 0.0f, FrameX, FrameY };
+
+    bool attackMode = false;
+    int attackAnimationTimer = 0;
+    int walkingAnimationTimer = 0;
 
     // Map Textures
-    Texture2D Map1 = LoadTexture("resources/maps/map1/map1.png");
-    Texture2D Map2 = LoadTexture("resources/maps/map2/map2.png");
-    Texture2D Map3 = LoadTexture("resources/maps/map3/map3.png");
-    
-    // Create a Interchangable Texture2D for the map.
-    Texture2D CurrentMap = Map1;
-
-    // NPC Textures
-
-    // Salesman Bob
-    Texture2D SalesmanBobLeft = LoadTexture("resources/NPCs/salesman_bob/bob_left.png");
-    Texture2D SalesmanBobRight = LoadTexture("resources/NPCs/salesman_bob/bob_right.png");
-    Texture2D SalesmanBobUp = LoadTexture("resources/NPCs/salesman_bob/bob_up.png");
-    Texture2D SalesmanBobDown = LoadTexture("resources/NPCs/salesman_bob/bob_down.png");
-    
-    // Create an interchangable Texture2D for salesman bob.
-    Texture2D SalesmanBob = SalesmanBobDown;
-    
-    // Variables used to control Salesman Bob.
-    int SalesmanBobX = 420;
-    int SalesmanBobY = 220;
-    int bobMovementTimer = 0;
-    bool showSalesmanBobsDialongBox = false;
-
-    // Variable holds cardinal direction for the players facing direction.
-    char CharacterCardinalDirection = 'S';
+    Texture2D VillageMain = LoadTexture("resources/maps/map1/main_village.png");
+    Texture2D VillageWest = LoadTexture("resources/maps/map2/main_village_west.png");
+    Texture2D VillageEast = LoadTexture("resources/maps/map3/main_village_east.png");
+    Texture2D VillageNorth = LoadTexture("resources/maps/map4/main_village_north.png");
+    Texture2D VillageSouth = LoadTexture("resources/maps/map5/main_village_south.png");
+    Texture2D CurrentMap = VillageMain;
 
     // String used for creating binary locations into an integer array.
-    string inputFileName = "resources/maps/map1/map1.txt";
+    string inputFileName = "resources/maps/map1/main_village.txt";
+
+    // Variable used for reading binary numbers from input file.
+    int binaryDigit;
+
+    // Controls which map the player is currently on.
+    Boundary CurrentBounds = VILLAGE_MAIN;
 
     // Array to hold blocked locations in integer format.
     int GameMapArray[ROW_SIZE][COL_SIZE];  // 50 x 50 for map sizing. (Tiles are 32x32 in size) 1600 x 1600 overall pixel size...
@@ -81,39 +99,23 @@ int main(int argc, char* argv[])
     // Array is used to hold all blocked locations of type rectangle.
     Rectangle BlockedLocations[TOTAL_BLOCKED_LOCATIONS];
 
-    // Rectangle type variables used for to and from teleportation to store 1 on map 1.
-    Rectangle ToStoreLocation = {256, 640, 64, 32};
-    Rectangle ExitStoreLocation = {256, 736, 64, 32};
-
     // Variable holds the number of blocked locations in total.
     int totalBlockedLocations = 0;
-
-    // Variable used for reading binary numbers from input file.
-    int binaryDigit;
-   
-    // Variables used for establishing screen dimensions.
-    int ScreenWidth  = GetScreenWidth();
-    int ScreenHeight = GetScreenHeight();
-
-    // Starting position for the player. (Control player with these variables)
-    int PlayerX = ScreenWidth / 2;
-    int PlayerY = 200; 
-
-    // Move camera vector with these variables.
-    float CameraX = 700;
-    float CameraY = 0;
 
     // Variable controls when to load map properties or new map properties.
     bool LoadMapProperties = true;
 
-    // Variable used to determine which map contents to load and use.
-    Boundary CurrentBounds = MAP_1;
+    // Move camera vector with these variables.
+    float CameraX = 670;
+    float CameraY = 190;
 
-    // Set the game FPS.
-    SetTargetFPS(60);
+    SetTargetFPS(60);       // Set the game FPS.
+    SetMousePosition(0,0);  // Set initial mouse postion to (0,0).
+
+    bool ContinuePlayingGame = true;
 
     // Main game loop
-    while (!WindowShouldClose())    // Detect window close button or ESC key
+    while (!WindowShouldClose() && ContinuePlayingGame)    // Detect window close button or ESC key
     {
         // Update
         //----------------------------------------------------------------------------------
@@ -133,24 +135,22 @@ int main(int argc, char* argv[])
                     rowCounter++;
                 }
             }
-            // Display multi-dimensional array to the console for debugging purposes.
-            // for (int i = 0; i < ROW_SIZE; i++) {
-            //     for (int k = 0; k < COL_SIZE; k++) {
-            //         cout << GameMapArray[i][k];
-            //     }
-            //     cout << endl;
-            // }
-            // Set to false to only load once.
             LoadMapProperties = false;
         }
 
-        // Declaration for the Camera2D.
-        Camera2D Camera = {{ CameraX, CameraY }, { CameraX, CameraY }, 0.0f, 1.5f };
+        // Variable holds the coordinates & zoom levels of the game camera.
+        Camera2D Camera = {{ CameraX, CameraY }, { CameraX, CameraY }, 0.0f, 2.5f };
+
+        // Variable holds X & Y coordinates of the player.
+        Vector2 position = { (float)PlayerX, (float)PlayerY };
+
+        Rectangle PlayerLocation = {(float)PlayerX, (float)PlayerY, 32, 32};
 
         // Variables used for draw coordinates for rectangles on blocked locations.
         int recPositionX = 0;
         int recPositionY = 0;
 
+        // Variables used to determine where mouse coordinates are currently at.
         int mouseX = GetMouseX();
         int mouseY = GetMouseY();
 
@@ -160,9 +160,6 @@ int main(int argc, char* argv[])
         int new_CameraX = CameraX;
         int new_CameraY = CameraY;
 
-        // Position of Salesman Bob to be updated upon each iteration of the loop to be used.
-        Rectangle SalesmanBobPosition = {(float)SalesmanBobX, (float)SalesmanBobY, 32, 32};
-
         // NOTE: Texture is scaled twice its size, so it sould be considered on scrolling
         
         //----------------------------------------------------------------------------------
@@ -170,397 +167,661 @@ int main(int argc, char* argv[])
         //----------------------------------------------------------------------------------
         BeginDrawing();
 
-        BeginMode2D(Camera);
+        switch(CurrentScreenDisplay){
+            case PreGameScreen:
+                DrawTexture(PreGameBackground, 0, 0, WHITE);
 
-        ClearBackground(BLACK);
+                if(mouseX > 535 && mouseX < 745 && mouseY > 291 && mouseY < 342){
+                    DrawLine(535, 290, 745, 290, WHITE);
+                    DrawLine(535, 343, 745, 343, WHITE);
 
-        // Draw map to the screen.
-        DrawTexture(CurrentMap, 0, 0, WHITE);
+                    // Set and/or reset all the players data values to starting values.
+                    // --------------------------------------------------------------//
+                    // End of reseting player data in text files.
 
-        // Draw player to the screen.
-        DrawTexture(Character, PlayerX, PlayerY, WHITE);
+                    if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+                        CurrentScreenDisplay = InGameScreen;
+                    }
 
-        // Draw blocked locations for the current map.
-        for (int i = 0; i < ROW_SIZE; i++) {
-            for (int k = 0; k < COL_SIZE; k++) {
-                if(GameMapArray[i][k] == 1){
-                    //DrawRectangle(recPositionX, recPositionY, 32, 32, RED);
-                    BlockedLocations[totalBlockedLocations] = {(float)recPositionX, (float)recPositionY, 32, 32};
-                    totalBlockedLocations++;
-                }
-                recPositionX += 32;
-            }
-            recPositionX = 0;
-            recPositionY += 32;
-        }
+                } else if (mouseX > 535 && mouseX < 745 && mouseY > 359 && mouseY < 409){
+                    DrawLine(535, 358, 745, 358, WHITE);
+                    DrawLine(535, 410, 745, 410, WHITE);
 
-        if(CurrentBounds == MAP_3){
-            // Draw Salesman Bob's character to the screen on map 3.
-            DrawTexture(SalesmanBob, SalesmanBobX, SalesmanBobY, WHITE);
-
-            // Draw Salesman Bob's Store menu to the screen.
-            if(showSalesmanBobsDialongBox){
-                DrawRectangle(PlayerX, PlayerY-120, 150, 100, GRAY);
-                DrawText("X", PlayerX+2, PlayerY - 120, 10, RED);
-                DrawText("Welcome to Bob's Store", PlayerX+15, PlayerY - 120, 8, WHITE);
-                DrawLine(PlayerX+15, PlayerY - 100, PlayerX+135, PlayerY - 100, BLACK);
-            }
-
-            // Check if player wants to EXIT the store menu.
-            int myMouseX = GetMouseX();
-            int myMouseY = GetMouseY();
-            if(myMouseX > 610 && myMouseX < 625 && myMouseY > 120 && myMouseY < 138){
-                if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
-                    showSalesmanBobsDialongBox = false;
-                }
-            }
-
-        }
-
-        EndMode2D();
-
-        // Figure out which movement key was pressed first before moving a player with that key.
-        string firstMovementKeyPressed = "NONE";
-        
-        if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_UP) || IsKeyDown(KEY_DOWN)) {
-
-            if (firstMovementKeyPressed != "NONE") {
-
-                if (firstMovementKeyPressed == "RIGHT" && !IsKeyDown(KEY_RIGHT)) {
-                    firstMovementKeyPressed = "NONE";
-                }
-
-                if (firstMovementKeyPressed == "LEFT" && !IsKeyDown(KEY_LEFT)) {
-                    firstMovementKeyPressed = "NONE";
-                }
+                    // Load all saved data from text files or the default starting data if nothing to begin with.
+                    // --------------------------------------------------------------//
+                    // End of Loading saved data and/or default data values for new users.
                     
-                if (firstMovementKeyPressed == "UP" && !IsKeyDown(KEY_UP)) {
-                    firstMovementKeyPressed = "NONE";
-                }
-                    
-                if (firstMovementKeyPressed == "DOWN" && !IsKeyDown(KEY_DOWN)) {
-                    firstMovementKeyPressed = "NONE";
-                }   
-            } else {
-                if (IsKeyDown(KEY_RIGHT)) {
-                    firstMovementKeyPressed = "RIGHT";
-                } else if (IsKeyDown(KEY_LEFT)) {
-                    firstMovementKeyPressed = "LEFT";
-                } else if (IsKeyDown(KEY_UP)) {
-                    firstMovementKeyPressed = "UP";
-                } else if (IsKeyDown(KEY_DOWN)) {
-                    firstMovementKeyPressed = "DOWN";
-                }
-            }
-        }
+                    if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+                        CurrentScreenDisplay = InGameScreen;
+                    }
 
-        /* Check Keyboard Input from Player for horizontal movement 
-        if the player pressed anything, change the new_PlayerX and new_CameraX variables */
-        if (firstMovementKeyPressed == "RIGHT") {
-            new_CameraX += 15;
-            Character = PlayerRight;
-            CharacterCardinalDirection = 'E';
-            new_PlayerX += 5;
-        } 
-        if (firstMovementKeyPressed == "LEFT") {
-            new_CameraX -= 15;
-            Character = PlayerLeft;
-            CharacterCardinalDirection = 'W';
-            new_PlayerX -= 5;
-        } 
+                } else if(mouseX > 535 && mouseX < 745 && mouseY > 429 && mouseY < 478){
+                    DrawLine(535, 428, 745, 428, WHITE);
+                    DrawLine(535, 479, 745, 479, WHITE);
+                } else if (mouseX > 535 && mouseX < 745 && mouseY > 496 && mouseY < 546){
+                    DrawLine(535, 495, 745, 495, WHITE);
+                    DrawLine(535, 547, 745, 547, WHITE);
 
-        /* Now change if we are colliding with anything, if yes, go back to the last "safe" position, if not, go there */
-        for (int i = 0; i < totalBlockedLocations; i++) {
-            if (CheckCollisionRecs(BlockedLocations[i], {(float)new_PlayerX,(float)new_PlayerY,40,55})) {
-                new_PlayerX = PlayerX;
-                new_CameraX = CameraX;
-            }
-        }
-        PlayerX = new_PlayerX;
-        CameraX = new_CameraX;
-
-        /* Check Keyboard Input from Player for vertical movement 
-        if the player pressed anything, change the new_PlayerY and new_CameraY variables */
-        if(firstMovementKeyPressed == "UP") {
-            new_CameraY -= 15;
-            Character = PlayerUp;
-            CharacterCardinalDirection = 'N';
-            new_PlayerY -= 5;
-        } 
-        if (firstMovementKeyPressed == "DOWN") {
-            new_CameraY += 15;
-            Character = PlayerDown;
-            CharacterCardinalDirection = 'S';
-            new_PlayerY += 5;
-        }
-
-        /* Now change if we are colliding with anything, if yes, go back to the last "safe" position, if not, go there */
-        for (int i = 0; i < totalBlockedLocations; i++) {
-            if (CheckCollisionRecs(BlockedLocations[i], {(float)new_PlayerX,(float)new_PlayerY,40,55})) {
-                new_PlayerY = PlayerY;
-                new_CameraY = CameraY;
-            }
-        }
-        PlayerY = new_PlayerY;
-        CameraY = new_CameraY;
-
-        // Check for player colliding into salesman bob on map3.
-        if(CheckCollisionRecs({(float)new_PlayerX,(float)new_PlayerY,40,55}, SalesmanBobPosition) && CurrentBounds == MAP_3) {
-            cout << "\nPlayer HIT Salesman Bob.\n";
-
-            //DrawRectangle(200, 200, 200, 200, YELLOW);
-            showSalesmanBobsDialongBox = true;
-
-            if(firstMovementKeyPressed == "UP"){
-                PlayerY += 10;
-                CameraY += 30;
-            }
-            if(firstMovementKeyPressed == "DOWN"){
-                PlayerY -= 10;
-                CameraY -= 30;
-            }
-
-            if(firstMovementKeyPressed == "LEFT"){
-                PlayerX += 10;
-                CameraX += 30;
-            }
-
-            if(firstMovementKeyPressed == "RIGHT"){
-                PlayerX -= 10;
-                CameraX -= 30;
-            }
-
-        }
-
-        if(CurrentBounds == MAP_1) {
-
-            // LEFT-SIDE Of Map1 collision detection to keep player on map.
-            if(PlayerX < 0 && (PlayerY < 680 || PlayerY > 765)) {
-                PlayerX = 1;
-                CameraX += 15;
-            }
-
-            // LEFT-SIDE of Map1 collision detection to send player to a new map location.
-            if(PlayerX < 0 && (PlayerY >= 680 && PlayerY <= 765)) {
-                // Code to change map here...
-                LoadMapProperties = true;
-                // change input file name
-                inputFileName = "resources/maps/map2/map2.txt";
-                // change CurrentMap Texture to new map
-                CurrentMap = Map2;
-                // Change current bounds to new map.
-                CurrentBounds = MAP_2;
-                // change player x & y coordinates to location wanted on new map.
-                PlayerX += 1575;
-                CameraX += 4720;
-                // Reset blocked locations to zero.
-                totalBlockedLocations = 0;
-            }
-
-            // RIGHT-SIDE Of Map1 collision detection to keep player on map.
-            if(PlayerX > 1570 && (PlayerY < 680 || PlayerY > 775)) {
-                PlayerX = 1569;
-                CameraX -= 15;
-            }
-
-            // RIGHT-SIDE of Map1 collision detection to send player to a new map location.
-            if(PlayerX > 1570 && (PlayerY > 680 && PlayerY < 775)) {
-                cout << "\nRIGHT-HIT\n";
-                DrawText("[EXIT LOCATION]", 500, 200, 24, WHITE);
-                // Code to change map here...
-
-                // End of code changes...
-            }
-
-            // TOP-SIDE - Has no exit points - Only need to ensure player is within bounds.
-            if(PlayerY <= -40) {
-                PlayerY = -39;
-                CameraY += 15;
-            }
-
-            // BOTTOM-SIDE Of Map1 collision detection to keep player on map.
-            if(PlayerY >= 1550 && (PlayerX < 730 || PlayerX > 835)) {
-                PlayerY = 1549;
-                CameraY -= 15;
-            }
-
-            // BOTTOM-SIDE of Map1 collission detection to send to player to a new map location.
-            if(PlayerY >= 1550 && (PlayerX > 730 && PlayerX < 835)) {
-                cout << "\nBOTTOM-HIT\n";
-                DrawText("[EXIT LOCATION]", 500, 200, 24, WHITE);
-                // Code to change map here...
-
-                // End of code changes...
-            }
-
-            // GO TO THE STORE!!!
-            // Teleport player to the store from building 1 on map 1.
-            if(CheckCollisionRecs(ToStoreLocation, {(float)PlayerX, (float)PlayerY, 40, 55 })) {
-
-                // Code to change map here...
-                LoadMapProperties = true;
-
-                // change input file name
-                inputFileName = "resources/maps/map3/map3.txt";
-
-                // change CurrentMap Texture to new map
-                CurrentMap = Map3;
-
-                // Change current bounds to new map.
-                CurrentBounds = MAP_3;
-
-                // Reset blocked locations to zero.
-                totalBlockedLocations = 0;
-
-            }
-
-        } else if (CurrentBounds == MAP_2) {
-            //LEFT
-            if(PlayerX < 0) {
-                PlayerX = 1;
-                CameraX += 15;
-            }
-            // RIGHT-SIDE Of Map2 collision detection to keep player on map.
-            if(PlayerX > 1570 && (PlayerY < 680 || PlayerY > 775)) {
-                PlayerX = 1569;
-                CameraX -= 15;
-            }
-            // RIGHT-SIDE of Map2 collision detection to send player to a Map1.
-            if(PlayerX > 1570 && (PlayerY >= 680 && PlayerY <= 775)) {
-                // Code to change map here...
-                LoadMapProperties = true;
-                // change input file name
-                inputFileName = "resources/maps/map1/map1.txt";
-                // change CurrentMap Texture to new map
-                CurrentMap = Map1;
-                // Change current bounds to new map.
-                CurrentBounds = MAP_1;
-                // change player x & y coordinates to location wanted on new map.
-                PlayerX -= 1575;
-                CameraX -= 4720;
-                // Reset blocked locations to zero.
-                totalBlockedLocations = 0;
-            }
-            // TOP
-            if(PlayerY <= -40) {
-                PlayerY = -39;
-                CameraY += 15;
-            }
-            // BOTTOM
-            if(PlayerY >= 1550) {
-                PlayerY = 1549;
-                CameraY -= 15;
-            }
-        } else if (CurrentBounds == MAP_3) {
-            // Store Map Location!
-
-            // Check if player is trying to exit the store location.
-            if(CheckCollisionRecs(ExitStoreLocation, {(float)PlayerX, (float)PlayerY, 40, 55 })) {
-                // Code to change map here...
-                LoadMapProperties = true;
-                // change input file name
-                inputFileName = "resources/maps/map1/map1.txt";
-                // change CurrentMap Texture to new map
-                CurrentMap = Map1;
-                // Change current bounds to new map.
-                CurrentBounds = MAP_1;
-                // Reset blocked locations to zero.
-                totalBlockedLocations = 0;
-                //  Close the store menu if it's still open.
-                showSalesmanBobsDialongBox = false;
-            }
-        
-            // EVERY 4-5 Seconds EXECUTE Salesman Bob to move randomly within a confined space. (UNDER CONDITIONS)
-            // Confined spacing coordinates are... X = 365, 575. Y = 175, 295.
-            // Salesman will ONLY move when player is roughly 30 pixels away. Calculated using the distance formula.
-            bobMovementTimer += 5;
-            if (bobMovementTimer >= 1500) {
-
-                // Variable used to calculate the distance between player and Salesman Bob.
-                float distance = sqrt( (SalesmanBobX - PlayerX) * (SalesmanBobX - PlayerX) + (SalesmanBobY - PlayerY) * (SalesmanBobY - PlayerY) ) - 32;
-
-                // Output distance for debugging purposes.
-                cout << "\nPlayer is " << distance << " pixels away from Salesman Bob." << endl;
-
-                // ONLY when Player is 30 pixels away from Salesman Bob, Then do this...
-                if(distance >= 30) {
-                    int randomInteger = rand() % 4;
-                    switch(randomInteger){
-                        case 0:
-                            // LEFT
-                            SalesmanBobX -= 10;
-                            SalesmanBob = SalesmanBobLeft;
-                            break;
-                        case 1:
-                            // RIGHT
-                            SalesmanBobX += 10;
-                            SalesmanBob = SalesmanBobRight;
-                            break;
-                        case 2:
-                            // UP
-                            SalesmanBobY -= 10;
-                            SalesmanBob = SalesmanBobUp;
-                            break;
-                        case 3:
-                            // DOWN
-                            SalesmanBobY += 10;
-                            SalesmanBob = SalesmanBobDown;
-                            break;
+                    if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+                        ContinuePlayingGame = false;  // Close Application. (EXIT button)
                     }
                 }
-                // IF SalesmanBob EXEEDS BOUNDARY LIMITS, THEN... reverse previous movement back into boundary.
-                if(SalesmanBobX < 365) {
-                    // Left Limit
-                    SalesmanBobX += 10;
-                    cout << "\nBOUNCE!\n";
-                }
-                if(SalesmanBobX > 575) {
-                    // Right Limit
-                    SalesmanBobX -= 10;
-                    cout << "\nBOUNCE!\n";
-                }
-                if(SalesmanBobY < 175) {
-                    // Lower Limit
-                    SalesmanBobY += 10;
-                    cout << "\nBOUNCE!\n";
-                }
-                if(SalesmanBobY > 295) {
-                    // Upper Limit
-                    SalesmanBobY -= 10;
-                    cout << "\nBOUNCE!\n";
-                }
-                // Reset 
-                bobMovementTimer = 0;
-            } 
+      
+                break;
+            case InGameScreen:
+                BeginMode2D(Camera);
+                ClearBackground(BLACK);
 
+                DrawTexture(CurrentMap, 0, 0, WHITE);                  // Draw map to the screen.
+
+                if(CurrentBounds == VILLAGE_NORTH){
+                    for(int i = 0; i < MAX_BLUE_FURRYS-1; i++){
+                        DrawTexture(BlueFurryArray[i].getCurrentTexture(), BlueFurryArray[i].getPositionX(), BlueFurryArray[i].getPositionY(), WHITE);
+                        BlueFurryArray[i].incrementMovementTimer();
+                        if(BlueFurryArray[i].getMovementTimerValue() > 5){
+                            int randomNumber = 1 + (rand() % 40);
+                            switch(randomNumber){
+                                case 1:
+                                    BlueFurryArray[i].moveBlueFurry("left");
+                                    break;
+                                case 2:
+                                    BlueFurryArray[i].moveBlueFurry("right");
+                                    break;
+                                case 3:
+                                    BlueFurryArray[i].moveBlueFurry("up");
+                                    break;
+                                case 4:
+                                    BlueFurryArray[i].moveBlueFurry("down");
+                                    break;
+                            }
+                            BlueFurryArray[i].setMovementTimer(0);
+                        }
+                    }
+
+                    for(int i = 0; i < MAX_BLUE_FURRYS-1; i++){
+                        if(CheckCollisionRecs(PlayerLocation, BlueFurryArray[i].getBlueFurryLocation())){
+                            DrawText("TESTING", PlayerX, PlayerY, 30, BLUE);
+                        }
+                    }
+                }
+
+                DrawTextureRec(CurrentSpriteSheet, frameRec, position, WHITE);  // Draw player to the screen.
+
+                // Draw blocked locations for the current map.
+                for (int i = 0; i < ROW_SIZE; i++) {
+                    for (int k = 0; k < COL_SIZE; k++) {
+                        if(GameMapArray[i][k] == 1){
+                            BlockedLocations[totalBlockedLocations] = {(float)recPositionX, (float)recPositionY, 32, 32};
+                            totalBlockedLocations++;
+                        }
+                        recPositionX += 32;
+                    }
+                    recPositionX = 0;
+                    recPositionY += 32;
+                }
+
+                EndMode2D();
+
+                if(!IsKeyPressed(KEY_LEFT) && !IsKeyPressed(KEY_RIGHT) && !IsKeyPressed(KEY_UP) && !IsKeyPressed(KEY_DOWN) 
+                    && !IsKeyDown(KEY_LEFT) && !IsKeyDown(KEY_RIGHT) && !IsKeyDown(KEY_UP) && !IsKeyDown(KEY_DOWN)){
+                    if(IsKeyPressed(KEY_Z)){
+                        if(CharacterDirection == 'S') {
+                            frameRec.y = 0;
+                            frameRec.x = 64;
+                            attackMode = true;
+                        } else if(CharacterDirection == 'N') {
+                            frameRec.y = 64;
+                            frameRec.x = 64;
+                            attackMode = true;
+                        } else if(CharacterDirection == 'E'){
+                            frameRec.y = 128;
+                            frameRec.x = 64;
+                            attackMode = true;
+                        }else if(CharacterDirection == 'W'){
+                            frameRec.y = 192;
+                            frameRec.x = 64;
+                            attackMode = true;
+                        }
+                    }
+
+                    if(IsKeyDown(KEY_Z)){
+                        if(CharacterDirection == 'S') {
+                            frameRec.y = 0;
+                            frameRec.x = 64;
+                            attackMode = true;
+                        } else if(CharacterDirection == 'N') {
+                            frameRec.y = 64;
+                            frameRec.x = 64;
+                            attackMode = true;
+                        } else if(CharacterDirection == 'E'){
+                            frameRec.y = 128;
+                            frameRec.x = 64;
+                            attackMode = true;
+                        }else if(CharacterDirection == 'W'){
+                            frameRec.y = 192;
+                            frameRec.x = 64;
+                            attackMode = true;
+                        }
+                    }
+                }
+
+                if(attackMode){
+                    attackAnimationTimer++;
+
+                    if(attackAnimationTimer >= 15){
+                        frameRec.x = 0;
+                        attackMode = false;
+                        attackAnimationTimer = 0;
+                    }
+                }
+
+                // Figure out which movement key was pressed first before moving a player with that key.
+                string firstMovementKeyPressed = "NONE";
+                
+                if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_UP) || IsKeyDown(KEY_DOWN)) {
+
+                    FrameX = (float)CurrentSpriteSheet.width/8;
+                    FrameY = (float)CurrentSpriteSheet.height/4;
+
+                    if(IsKeyDown(KEY_LEFT)){
+                        CharacterDirection = 'W';
+                    } else if(IsKeyDown(KEY_RIGHT)){
+                        CharacterDirection = 'E';
+                    } else if(IsKeyDown(KEY_UP)){
+                        CharacterDirection = 'N';
+                    } else if(IsKeyDown(KEY_DOWN)){
+                        CharacterDirection = 'S';
+                    }
+
+                    if (firstMovementKeyPressed != "NONE") {
+
+                        if (firstMovementKeyPressed == "RIGHT" && !IsKeyDown(KEY_RIGHT)) {
+                            firstMovementKeyPressed = "NONE";
+                        }
+
+                        if (firstMovementKeyPressed == "LEFT" && !IsKeyDown(KEY_LEFT)) {
+                            firstMovementKeyPressed = "NONE";
+                        }
+                            
+                        if (firstMovementKeyPressed == "UP" && !IsKeyDown(KEY_UP)) {
+                            firstMovementKeyPressed = "NONE";
+                        }
+                            
+                        if (firstMovementKeyPressed == "DOWN" && !IsKeyDown(KEY_DOWN)) {
+                            firstMovementKeyPressed = "NONE";
+                        }   
+                    } else {
+                        if (IsKeyDown(KEY_RIGHT)) {
+                            firstMovementKeyPressed = "RIGHT";
+                        } else if (IsKeyDown(KEY_LEFT)) {
+                            firstMovementKeyPressed = "LEFT";
+                        } else if (IsKeyDown(KEY_UP)) {
+                            firstMovementKeyPressed = "UP";
+                        } else if (IsKeyDown(KEY_DOWN)) {
+                            firstMovementKeyPressed = "DOWN";
+                        }
+                    }
+                }
+
+                walkingAnimationTimer++;
+                if(walkingAnimationTimer > 5){
+
+                    if(firstMovementKeyPressed == "LEFT"){
+                        frameRec.x += 64;
+                        frameRec.y = 448;
+                    } else if(firstMovementKeyPressed == "RIGHT"){
+                        frameRec.x += 64;
+                        frameRec.y = 384;
+                    } else if(firstMovementKeyPressed == "UP"){
+                        frameRec.x += 64;
+                        frameRec.y = 320;
+                    } else if(firstMovementKeyPressed == "DOWN"){
+                        frameRec.x += 64;
+                        frameRec.y = 256;
+                    }
+
+                    if(frameRec.x >= 320){
+                        frameRec.x = 0;
+                    }
+                    walkingAnimationTimer = 0;
+
+                }
+
+                if(IsKeyReleased(KEY_LEFT)){
+                    frameRec.x = 0;
+                    frameRec.y = 192;
+                } else if(IsKeyReleased(KEY_RIGHT)){
+                    frameRec.x = 0;
+                    frameRec.y = 128;
+                } else if(IsKeyReleased(KEY_UP)){
+                    frameRec.x = 0;
+                    frameRec.y = 64;
+                } else if(IsKeyReleased(KEY_DOWN)){
+                    frameRec.x = 0;
+                    frameRec.y = 0;
+                }
+
+                /* Check Keyboard Input from Player for horizontal movement 
+                if the player pressed anything, change the new_PlayerX and new_CameraX variables */
+                if (firstMovementKeyPressed == "RIGHT") {
+                    new_CameraX += 5;
+                    CharacterDirection = 'E';
+                    new_PlayerX += 3;
+                } 
+                if (firstMovementKeyPressed == "LEFT") {
+                    new_CameraX -= 5;
+                    CharacterDirection = 'W';
+                    new_PlayerX -= 3;
+                } 
+
+                if(CharacterDirection == 'E'){
+                    /* Now change if we are colliding with anything, if yes, go back to the last "safe" position, if not, go there */
+                    for (int i = 0; i < totalBlockedLocations; i++) {
+                        if (CheckCollisionRecs(BlockedLocations[i], {(float)new_PlayerX,(float)new_PlayerY,40,55})) {
+                            new_PlayerX = PlayerX;
+                            new_CameraX = CameraX;
+                        }
+                    }
+                    PlayerX = new_PlayerX;
+                    CameraX = new_CameraX;
+                } else if (CharacterDirection == 'W'){
+                    /* Now change if we are colliding with anything, if yes, go back to the last "safe" position, if not, go there */
+                    for (int i = 0; i < totalBlockedLocations; i++) {
+                        if (CheckCollisionRecs(BlockedLocations[i], {(float)new_PlayerX-5,(float)new_PlayerY,40,55})) {
+                            new_PlayerX = PlayerX;
+                            new_CameraX = CameraX;
+                        }
+                    }
+                    PlayerX = new_PlayerX;
+                    CameraX = new_CameraX;
+                }
+
+                /* Check Keyboard Input from Player for vertical movement 
+                if the player pressed anything, change the new_PlayerY and new_CameraY variables */
+                if(firstMovementKeyPressed == "UP") {
+                    new_CameraY -= 5;
+                    CharacterDirection = 'N';
+                    new_PlayerY -= 3;
+                } 
+                if (firstMovementKeyPressed == "DOWN") {
+                    new_CameraY += 5;
+                    CharacterDirection = 'S';
+                    new_PlayerY += 3;
+                }
+
+                if(CharacterDirection == 'N'){
+                    /* Now change if we are colliding with anything, if yes, go back to the last "safe" position, if not, go there */
+                    for (int i = 0; i < totalBlockedLocations; i++) {
+                        if (CheckCollisionRecs(BlockedLocations[i], {(float)new_PlayerX,(float)new_PlayerY-10,40,55})) {
+                            new_PlayerY = PlayerY;
+                            new_CameraY = CameraY;
+                        }
+                    }
+                    PlayerY = new_PlayerY;
+                    CameraY = new_CameraY;
+                } else if (CharacterDirection == 'S'){
+                    /* Now change if we are colliding with anything, if yes, go back to the last "safe" position, if not, go there */
+                    for (int i = 0; i < totalBlockedLocations; i++) {
+                        if (CheckCollisionRecs(BlockedLocations[i], {(float)new_PlayerX,(float)new_PlayerY,40,55})) {
+                            new_PlayerY = PlayerY;
+                            new_CameraY = CameraY;
+                        }
+                    }
+                    PlayerY = new_PlayerY;
+                    CameraY = new_CameraY;
+                }
+
+                if(CurrentBounds == VILLAGE_MAIN) {
+
+                    // LEFT-SIDE Of Map1 collision detection to keep player on map.
+                    if(PlayerX < -25 && (PlayerY >= 452 || PlayerY <= 530)) {
+                        PlayerX = -24;
+                        CameraX += 5;
+                    }
+
+                    // LEFT-SIDE of Map1 -GO TO: Village West Location
+                    if(PlayerX <= -24 && (PlayerY >= 452 && PlayerY <= 530)) {
+                        // Code to change map here...
+                        LoadMapProperties = true;
+                        // change input file name
+                        inputFileName = "resources/maps/map2/main_village_west.txt";
+                        // change CurrentMap Texture to new map
+                        CurrentMap = VillageWest;
+                        // Change current bounds to new map.
+                        CurrentBounds = VILLAGE_WEST;
+                        // change player x & y coordinates to location wanted on new map.
+                        PlayerX += 1575;
+                        CameraX += 2625;
+                        // Reset blocked locations to zero.
+                        totalBlockedLocations = 0;
+                    }
+
+                    // RIGHT-SIDE Of Map1 collision detection to keep player on map.
+                    if(PlayerX > 1562 && (PlayerY >= 428 || PlayerY <= 515)) {
+                        PlayerX = 1561;
+                        CameraX -= 5;
+                    }
+                    // RIGHT-SIDE of Map1 -GO TO: Village East Location
+                    if(PlayerX >= 1561 && (PlayerY >= 428 && PlayerY <= 515)) {
+                        // Code to change map here...
+                        LoadMapProperties = true;
+                        // change input file name
+                        inputFileName = "resources/maps/map3/main_village_east.txt";
+                        // change CurrentMap Texture to new map
+                        CurrentMap = VillageEast;
+                        // Change current bounds to new map.
+                        CurrentBounds = VILLAGE_EAST;
+                        // change player x & y coordinates to location wanted on new map.
+                        PlayerX -= 1575;
+                        CameraX -= 2625;
+                        // Reset blocked locations to zero.
+                        totalBlockedLocations = 0;
+                    }
+
+                    // TOP-SIDE Of Map 1 collision detection to keep player on map.
+                    if(PlayerY <= -40 && (PlayerX >= 598 || PlayerX <= 875)) {
+                        PlayerY = -39;
+                        CameraY += 5;
+                    }
+                    // TOP-SIDE Of Map 1... GO TO: VILLAGE NORTH
+                    if(PlayerY <= -39 && (PlayerX >= 598 && PlayerX <= 875)) {
+                        // Code to change map here...
+                        LoadMapProperties = true;
+                        // change input file name
+                        inputFileName = "resources/maps/map4/main_village_north.txt";
+                        // change CurrentMap Texture to new map
+                        CurrentMap = VillageNorth;
+                        // Change current bounds to new map.
+                        CurrentBounds = VILLAGE_NORTH;
+                        // change player x & y coordinates to location wanted on new map.
+                        PlayerY += 1575;
+                        CameraY += 2625;
+                        // Reset blocked locations to zero.
+                        totalBlockedLocations = 0;
+                    }
+
+                    // BOTTOM-SIDE Of Map 1 collision detection to keep player on map.
+                    if(PlayerY >= 1555 && (PlayerX >= 598 || PlayerX <= 875)) {
+                        PlayerY = 1554;
+                        CameraY -= 5;
+                    }
+                    
+                    // BOTTOM-SIDE Of Map 1... GO TO: Village South!
+                    if(PlayerY >= 1554 && (PlayerX >= 598 && PlayerX <= 875)) {
+                        // Code to change map here...
+                        LoadMapProperties = true;
+                        // change input file name
+                        inputFileName = "resources/maps/map5/main_village_south.txt";
+                        // change CurrentMap Texture to new map
+                        CurrentMap = VillageSouth;
+                        // Change current bounds to new map.
+                        CurrentBounds = VILLAGE_SOUTH;
+                        // change player x & y coordinates to location wanted on new map.
+                        PlayerY -= 1575;
+                        CameraY -= 2625;
+                        // Reset blocked locations to zero.
+                        totalBlockedLocations = 0;
+                    }
+
+
+
+                } else if (CurrentBounds == VILLAGE_WEST) {
+                    //LEFT
+                    if(PlayerX < -25) {
+                        PlayerX = -24;
+                        CameraX += 5;
+                    }
+                    // RIGHT-SIDE Of Map2 collision detection to keep player on map.
+                    if(PlayerX > 1562 && (PlayerY >= 452 || PlayerY <= 530)) {
+                        PlayerX = 1561;
+                        CameraX -= 5;
+                    }
+                    // RIGHT-SIDE of Map2 collision detection to send player to a Map1.
+                    if(PlayerX >= 1561 && (PlayerY >= 452 && PlayerY <= 530)) {
+                        // Code to change map here...
+                        LoadMapProperties = true;
+                        // change input file name
+                        inputFileName = "resources/maps/map1/main_village.txt";
+                        // change CurrentMap Texture to new map
+                        CurrentMap = VillageMain;
+                        // Change current bounds to new map.
+                        CurrentBounds = VILLAGE_MAIN;
+                        // change player x & y coordinates to location wanted on new map.
+                        PlayerX -= 1575;
+                        CameraX -= 2625;
+                        // Reset blocked locations to zero.
+                        totalBlockedLocations = 0;
+                    }
+                    // TOP
+                    if(PlayerY <= -40) {
+                        PlayerY = -39;
+                        CameraY += 5;
+                    }
+                    // BOTTOM
+                    if(PlayerY >= 1555) {
+                        PlayerY = 1554;
+                        CameraY -= 5;
+                    }
+                } else if (CurrentBounds == VILLAGE_EAST) {
+                    
+                    // LEFT
+                    if(PlayerX < -25 && (PlayerY >= 428 || PlayerY <= 515)) {
+                        PlayerX = -24;
+                        CameraX += 5;
+                    }
+
+                    // LEFT
+                    if(PlayerX <= -24 && (PlayerY >= 428 && PlayerY <= 515)){
+                        // Code to change map here...
+                        LoadMapProperties = true;
+                        // change input file name
+                        inputFileName = "resources/maps/map1/main_village.txt";
+                        // change CurrentMap Texture to new map
+                        CurrentMap = VillageMain;
+                        // Change current bounds to new map.
+                        CurrentBounds = VILLAGE_MAIN;
+                        // change player x & y coordinates to location wanted on new map.
+                        PlayerX += 1575;
+                        CameraX += 2625;
+                        // Reset blocked locations to zero.
+                        totalBlockedLocations = 0;
+                    }
+
+                    // RIGHT-SIDE Of Map2 collision detection to keep player on map.
+                    if(PlayerX > 1562) {
+                        PlayerX = 1561;
+                        CameraX -= 5;
+                    }
+
+                    // TOP
+                    if(PlayerY <= -40) {
+                        PlayerY = -39;
+                        CameraY += 5;
+                    }
+                    // BOTTOM
+                    if(PlayerY >= 1555) {
+                        PlayerY = 1554;
+                        CameraY -= 5;
+                    }
+
+                } else if(CurrentBounds == VILLAGE_NORTH){
+                    // LEFT
+                    if(PlayerX < -25) {
+                        PlayerX = -24;
+                        CameraX += 5;
+                    }
+
+                    // RIGHT
+                    if(PlayerX > 1562) {
+                        PlayerX = 1561;
+                        CameraX -= 5;
+                    }
+
+                    // TOP
+                    if(PlayerY <= -40) {
+                        PlayerY = -39;
+                        CameraY += 5;
+                    }
+
+                    // BOTTOM
+                    if(PlayerY > 1556 && (PlayerX >= 598 || PlayerX <= 875)) {
+                        PlayerY = 1555;
+                        CameraY -= 5;
+                    }
+
+                    if(PlayerY >= 1555 && (PlayerX >= 598 && PlayerX <= 875)){
+                        // Code to change map here...
+                        LoadMapProperties = true;
+                        // change input file name
+                        inputFileName = "resources/maps/map1/main_village.txt";
+                        // change CurrentMap Texture to new map
+                        CurrentMap = VillageMain;
+                        // Change current bounds to new map.
+                        CurrentBounds = VILLAGE_MAIN;
+                        // change player x & y coordinates to location wanted on new map.
+                        PlayerY -= 1575;
+                        CameraY -= 2625;
+                        // Reset blocked locations to zero.
+                        totalBlockedLocations = 0;
+                    }
+                } else if(CurrentBounds == VILLAGE_SOUTH) {
+                    // LEFT
+                    if(PlayerX < -25) {
+                        PlayerX = -24;
+                        CameraX += 5;
+                    }
+
+                    // RIGHT
+                    if(PlayerX > 1562) {
+                        PlayerX = 1561;
+                        CameraX -= 5;
+                    }
+
+                    // TOP
+                    if(PlayerY <= -40  && (PlayerX >= 598 || PlayerX <= 875)) {
+                        PlayerY = -39;
+                        CameraY += 5;
+                    }
+
+                    // TOP... GO TO: Main Village!
+                    if(PlayerY <= -39  && (PlayerX >= 598 && PlayerX <= 875)) {
+                        // Code to change map here...
+                        LoadMapProperties = true;
+                        // change input file name
+                        inputFileName = "resources/maps/map1/main_village.txt";
+                        // change CurrentMap Texture to new map
+                        CurrentMap = VillageMain;
+                        // Change current bounds to new map.
+                        CurrentBounds = VILLAGE_MAIN;
+                        // change player x & y coordinates to location wanted on new map.
+                        PlayerY += 1575;
+                        CameraY += 2625;
+                        // Reset blocked locations to zero.
+                        totalBlockedLocations = 0;
+                    }
+
+                    // BOTTOM
+                    if(PlayerY >= 1556) {
+                        PlayerY = 1555;
+                        CameraY -= 5;
+                    }
+                }
+
+                DrawTexture(InGameBackground, 0, 0, WHITE);
+
+                // Right-Top Big Button!
+                if(mouseX >= 105 && mouseX <= 334 && mouseY >= 485 && mouseY <= 532){
+                    CurrentButtonTexture = BigButtonPressed;
+                    DrawTexture(CurrentButtonTexture, 75, 480, WHITE);
+                    DrawText("Inventory", 155, 500, 24, WHITE);
+                    if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) || IsMouseButtonDown(MOUSE_LEFT_BUTTON)){
+                        CurrentMenuOptions = INVENTORY;
+                    }
+                } else {
+                    CurrentButtonTexture = BigButtonUnpressed;
+                    DrawTexture(CurrentButtonTexture, 75, 480, WHITE);
+                    DrawText("Inventory", 155, 495, 24, WHITE);
+                }
+                // Right-Middle Big Button!
+                if(mouseX >= 105 && mouseX <= 334 && mouseY >= 550 && mouseY <= 598){
+                    CurrentButtonTexture = BigButtonPressed;
+                    DrawTexture(CurrentButtonTexture, 75, 545, WHITE);
+                    DrawText("Quests", 175, 565, 24, WHITE);
+                } else {
+                    CurrentButtonTexture = BigButtonUnpressed;
+                    DrawTexture(CurrentButtonTexture, 75, 545, WHITE);
+                    DrawText("Quests", 175, 560, 24, WHITE);
+                }
+                // Right-Bottom Big Button!
+                if(mouseX >= 105 && mouseX <= 334 && mouseY >= 615 && mouseY <= 662){
+                    CurrentButtonTexture = BigButtonPressed;
+                    DrawTexture(CurrentButtonTexture, 75, 610, WHITE);
+                    DrawText("Skills", 185, 630, 24, WHITE);
+                } else {
+                    CurrentButtonTexture = BigButtonUnpressed;
+                    DrawTexture(CurrentButtonTexture, 75, 610, WHITE);
+                    DrawText("Skills", 185, 625, 24, WHITE);
+                }
+                
+                // Left-Top Big Button!
+                if(mouseX >= 960 && mouseX <= 1185 && mouseY >= 485 && mouseY <= 532){
+                    CurrentButtonTexture = BigButtonPressed;
+                    DrawTexture(CurrentButtonTexture, 930, 480, WHITE);
+                    DrawText("Equipped", 1019, 500, 24, WHITE);
+                } else {
+                    CurrentButtonTexture = BigButtonUnpressed;
+                    DrawTexture(CurrentButtonTexture, 930, 480, WHITE);
+                    DrawText("Equipped", 1019, 495, 24, WHITE);
+                }
+                // Left-Middle Big Button!
+                if(mouseX >= 960 && mouseX <= 1185 && mouseY >= 550 && mouseY <= 598){
+                    CurrentButtonTexture = BigButtonPressed;
+                    DrawTexture(CurrentButtonTexture, 930, 545, WHITE);
+                    DrawText("Settings", 1020, 565, 24, WHITE);
+                } else {
+                    CurrentButtonTexture = BigButtonUnpressed;
+                    DrawTexture(CurrentButtonTexture, 930, 545, WHITE);
+                    DrawText("Settings", 1020, 560, 24, WHITE);
+                }
+                // Left-Bottom Big Button!
+                if(mouseX >= 960 && mouseX <= 1185 && mouseY >= 615 && mouseY <= 662){
+                    CurrentButtonTexture = BigButtonPressed;
+                    DrawTexture(CurrentButtonTexture, 930, 610, WHITE);
+                    DrawText("Other", 1038, 630, 24, WHITE);
+                    if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON) || IsMouseButtonDown(MOUSE_LEFT_BUTTON)){
+                        CurrentMenuOptions = OTHER;
+                    }
+                } else {
+                    CurrentButtonTexture = BigButtonUnpressed;
+                    DrawTexture(CurrentButtonTexture, 930, 610, WHITE);
+                    DrawText("Other", 1038, 625, 24, WHITE);
+                }
+
+                if(CurrentMenuOptions == INVENTORY){
+
+                } else if (CurrentMenuOptions == OTHER){
+                    // Display mouse and player coordinates to the screen.
+                    ostringstream ss;
+                    string mouseValues;
+                    ss << "Mouse X Value is: " << mouseX << endl;
+                    ss << "Mouse Y Value is: " << mouseY << endl;
+                    ss << "Player X is: " << PlayerX << endl;
+                    ss << "Player Y is: " << PlayerY << endl;
+                    mouseValues = ss.str();
+                    DrawText(mouseValues.c_str(), 550, ScreenHeight-200, 20, WHITE);
+                }
+
+                // current date and time on the current system
+                time_t now = time(0);
+                // convert now to string form
+                char* date_time = ctime(&now);
+                string dateStr;
+                stringstream dateSS;
+                dateSS << date_time;
+                dateStr = dateSS.str();
+                DrawText(dateStr.c_str(), 1031, ScreenHeight-30, 18, WHITE);
+                break;
         }
-
-        //Draw Gaming menu template with rectangles around screen edges.
-        DrawRectangle(0, 0, ScreenWidth, 50, DARKBROWN);                  // Top
-        DrawRectangle(0, ScreenHeight-300, ScreenWidth, 300, DARKBROWN); // Bottom
-        DrawRectangle(0, 0, 20, ScreenHeight, DARKBROWN);                 // Left
-        DrawRectangle(ScreenWidth-20, 0, 20, ScreenHeight, DARKBROWN);   // Right
-        
-        // Display mouse and player coordinates to the screen.
-        ostringstream ss;
-        string mouseValues;
-        ss << "Mouse X Value is: " << mouseX << endl;
-        ss << "Mouse Y Value is: " << mouseY << endl;
-        ss << "Player X is: " << PlayerX << endl;
-        ss << "Player Y is: " << PlayerY << endl;
-        mouseValues = ss.str();
-        DrawText(mouseValues.c_str(), 5, ScreenHeight-250, 24, WHITE);
-
-        // current date and time on the current system
-        time_t now = time(0);
-        // convert now to string form
-        char* date_time = ctime(&now);
-        string dateStr;
-        //cout << "The current date and time is: " << date_time << endl;
-        stringstream dateSS;
-        dateSS << date_time;
-        dateStr = dateSS.str();
-        DrawText(dateStr.c_str(), 950, ScreenHeight-50, 24, WHITE);
  
         EndDrawing();
         //----------------------------------------------------------------------------------
@@ -570,22 +831,18 @@ int main(int argc, char* argv[])
 
     // De-Initialization
     //--------------------------------------------------------------------------------------
-    UnloadTexture(PlayerLeft);
-    UnloadTexture(PlayerRight);
-    UnloadTexture(PlayerUp);
-    UnloadTexture(PlayerDown);
-    UnloadTexture(Character);
+    UnloadTexture(HumanSpriteSheet);
+    UnloadTexture(CurrentSpriteSheet);
 
-    UnloadTexture(Map1);
-    UnloadTexture(Map2);
-    UnloadTexture(Map3);
+    UnloadTexture(VillageMain);
+    UnloadTexture(VillageNorth);
+    UnloadTexture(VillageSouth);
+    UnloadTexture(VillageEast);
+    UnloadTexture(VillageWest);
     UnloadTexture(CurrentMap);
 
-    UnloadTexture(SalesmanBobLeft);
-    UnloadTexture(SalesmanBobRight);
-    UnloadTexture(SalesmanBobDown);
-    UnloadTexture(SalesmanBobUp);
-    UnloadTexture(SalesmanBob);
+    UnloadTexture(PreGameBackground);
+    UnloadTexture(InGameBackground);
 
     CloseWindow();                // Close window and OpenGL context
     //--------------------------------------------------------------------------------------

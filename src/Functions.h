@@ -10,34 +10,37 @@
 
 // Pre-processor directives
 #include "../include/raylib.h"
-#include <cstdlib>
-#include <chrono>
-#include <ctime>
-#include <math.h>
-
-#include <stdlib.h> // For random numbers to be generated
-#include <cctype>   // For toUpper() function to be used
-
 #include <iostream>
 #include <iomanip>
 #include <string>
-#include <ostream>
 #include <sstream>
 #include <fstream>
-#include <vector>
-
-#include <string.h>
 #include <unistd.h>
-#include <stdio.h>
-using std::vector; 
+#include <stdlib.h>     /* srand, rand */
+#include <time.h>       /* time */
 using namespace std;
-using namespace std::chrono;
 
 enum Boundary {
     NONE,
-    MAP_1,
-    MAP_2,
-    MAP_3,
+    VILLAGE_MAIN,
+    VILLAGE_NORTH,
+    VILLAGE_EAST,
+    VILLAGE_SOUTH,
+    VILLAGE_WEST,
+};
+
+enum GameMenuScreen {
+    PreGameScreen,
+    InGameScreen,
+};
+
+enum InGameMenuOptions {
+    INVENTORY,
+    QUESTS,
+    SKILLS,
+    EQUIPPED,
+    SETTINGS,
+    OTHER,
 };
 
 const int ROW_SIZE = 50; // CONST - Used to set the row size of the game map array.
@@ -46,8 +49,6 @@ const int COL_SIZE = 50; // CONST - Used to set the column size of the game map 
 const int TOTAL_BLOCKED_LOCATIONS = 50;
 
 // Function Prototypes
-
-// Prototype description goes here...
 int LocationsFromFile(int binaryDigit);
 
 #endif /* Functions_h */

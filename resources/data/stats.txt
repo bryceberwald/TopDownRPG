@@ -1,0 +1,11 @@
+***LEVEL***
+1
+***HP***
+10
+***ATTACK LEVEL***
+1
+***STRENGTH LEVEL***
+1
+***DEFENSE LEVEL***
+1
+
