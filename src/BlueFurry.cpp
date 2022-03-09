@@ -137,10 +137,13 @@ int BlueFurry::getPositionY()const{
     return this->PositionY;
 }
 
-
+/*****************************************************
+ * 
+*****************************************************/
 float BlueFurry::getHealth()const{
     return this->health;
 }
+
 
 /*****************************************************
  * 
@@ -165,10 +168,18 @@ char BlueFurry::getBlueFurryDirection()const{
     return this->direction;
 }
 
+
 /********************************************
  * 
 *********************************************/
 float BlueFurry::getDisplayHealth()const{
-    return health * 3;
+    return this->health * 3;
 }
 
+
+/********************************************
+ * 
+*********************************************/
+int BlueFurry::getLevel()const{
+    return this->level;
+}

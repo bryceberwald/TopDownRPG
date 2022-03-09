@@ -100,6 +100,11 @@ class BlueFurry {
         *********************************************/
         float getDisplayHealth()const;
 
+        /********************************************
+         * 
+        *********************************************/
+        int getLevel()const;
+
     private:
         Texture2D npc_up;
         Texture2D npc_down;

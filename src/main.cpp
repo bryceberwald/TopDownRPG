@@ -65,6 +65,18 @@ int main(int argc, char* argv[])
     // Variable determines which direction player is facing.
     char CharacterDirection = 'S';
 
+    /* Player/Character Database contents temporarily */
+    struct CharacterDatabase {
+        int CombatLVL;
+        int StrengthLVL;
+        float TotalHealth;
+    };
+    CharacterDatabase CharacterPlaying;
+    CharacterPlaying.CombatLVL = 1;
+    CharacterPlaying.StrengthLVL = 1;
+    CharacterPlaying.TotalHealth = 10;
+    /* End of Player/Character Database contents */
+
     // Control Player X & Y coordinates with these variables.
     int PlayerX = ScreenWidth / 2;
     int PlayerY = 200; 
@@ -148,6 +160,9 @@ int main(int argc, char* argv[])
 
         // Variable holds X & Y coordinates of the player.
         Vector2 position = { (float)PlayerX, (float)PlayerY };
+
+        // Variable holds the damage amount that the player can currently hit.
+        float damageAmount = CharacterPlaying.CombatLVL * CharacterPlaying.StrengthLVL;
 
         // Variables used for draw coordinates for rectangles on blocked locations.
         int recPositionX = 0;
@@ -794,23 +809,37 @@ int main(int argc, char* argv[])
                     float PlayerToFurryDistance = pow( pow(BlueFurryCoordinatesVectorArray[attackedFurryIndex].x - (PlayerX+32), 2) + pow(BlueFurryCoordinatesVectorArray[attackedFurryIndex].y - (PlayerY+32), 2), 0.5f);
                     int randomAttack = 1 + (rand() % 5);
 
+                    // Simple multiplier algorithm
+                    float multipler = 1;
+                    if(CharacterPlaying.CombatLVL < BlueFurryArray[attackedFurryIndex].getLevel()){
+                        int inbetween = BlueFurryArray[attackedFurryIndex].getLevel() - CharacterPlaying.CombatLVL;
+                        multipler -= inbetween * 0.1;
+                    } else if(CharacterPlaying.CombatLVL > BlueFurryArray[attackedFurryIndex].getLevel()){
+                        int inbetween = CharacterPlaying.CombatLVL - BlueFurryArray[attackedFurryIndex].getLevel();
+                        multipler += inbetween * 0.1;
+                    } else {
+                        multipler = 1;
+                    }
+
+                    float totalDamageAmount = damageAmount * multipler;
+
                     // Check if player is attacking a blue furry within distance.
                     if((CharacterDirection == 'S') && PlayerToFurryDistance < 28 && IsKeyPressed(KEY_Z)){
                         if(randomAttack == 1){
-                            BlueFurryArray[attackedFurryIndex].updateHP(0.5);
+                            BlueFurryArray[attackedFurryIndex].updateHP(totalDamageAmount);
                         }
                     } else if ((CharacterDirection == 'E') && PlayerToFurryDistance < 26 && (IsKeyDown(KEY_Z) || IsKeyPressed(KEY_Z))){
                         if(randomAttack == 1){
-                            BlueFurryArray[attackedFurryIndex].updateHP(0.5);
+                            BlueFurryArray[attackedFurryIndex].updateHP(totalDamageAmount);
                         }
                     } else if ((CharacterDirection == 'W') && PlayerToFurryDistance < 26 && (IsKeyDown(KEY_Z) || IsKeyPressed(KEY_Z))){
                         if(randomAttack == 1){
-                            BlueFurryArray[attackedFurryIndex].updateHP(0.5);
+                            BlueFurryArray[attackedFurryIndex].updateHP(totalDamageAmount);
                         }
                     } else if ((CharacterDirection == 'N') && PlayerToFurryDistance < 28 && (IsKeyDown(KEY_Z) || IsKeyPressed(KEY_Z))){
                         if(!(PlayerX < BlueFurryArray[attackedFurryIndex].getPositionX() && PlayerY < BlueFurryArray[attackedFurryIndex].getPositionY()) && !(PlayerX > BlueFurryArray[attackedFurryIndex].getPositionX() && PlayerY < BlueFurryArray[attackedFurryIndex].getPositionY())){
                             if(randomAttack == 1){
-                                BlueFurryArray[attackedFurryIndex].updateHP(0.5);
+                                BlueFurryArray[attackedFurryIndex].updateHP(totalDamageAmount);
                             }
                         }
                     }
