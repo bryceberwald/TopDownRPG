@@ -26,8 +26,8 @@ BlueFurry::BlueFurry(){
 
     this->movementTimer = 0;
 
-    this->totalHealth = 10;
-    this->currentHealth = 10;
+    this->health = 10.0;
+    this->displayHealth = 100.0;
 
     this->level = 1;
 }
@@ -82,6 +82,25 @@ void BlueFurry::updateBlueFurryLocation(float x, float y, float width, float hei
 /*****************************************************
  * 
 *****************************************************/
+void BlueFurry::updateHP(float damage){
+ this->health -= damage;
+}
+
+
+/*****************************************************
+ * 
+*****************************************************/
+void BlueFurry::respawnBlueFurry(){
+    this->PositionX = 500 + (rand() % 356);
+    this->PositionY = 777 + (rand() % 574);
+
+    this->health = 10;
+}
+
+
+/*****************************************************
+ * 
+*****************************************************/
 void BlueFurry::setMovementTimer(int value){
     this->movementTimer = value;
 }
@@ -119,6 +138,10 @@ int BlueFurry::getPositionY()const{
 }
 
 
+float BlueFurry::getHealth()const{
+    return this->health;
+}
+
 /*****************************************************
  * 
 *****************************************************/
@@ -141,3 +164,11 @@ Rectangle BlueFurry::getBlueFurryLocation()const{
 char BlueFurry::getBlueFurryDirection()const{
     return this->direction;
 }
+
+/********************************************
+ * 
+*********************************************/
+float BlueFurry::getDisplayHealth()const{
+    return health * 3;
+}
+

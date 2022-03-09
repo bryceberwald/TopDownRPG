@@ -48,6 +48,16 @@ class BlueFurry {
         /********************************************
          * 
         *********************************************/
+        void updateHP(float damaga);
+
+        /********************************************
+         * 
+        *********************************************/
+        void respawnBlueFurry();
+
+        /********************************************
+         * 
+        *********************************************/
         void incrementMovementTimer();
 
         /********************************************
@@ -68,6 +78,11 @@ class BlueFurry {
         /********************************************
          * 
         *********************************************/
+        float getHealth()const;
+
+        /********************************************
+         * 
+        *********************************************/
         Texture2D getCurrentTexture()const;
 
         /********************************************
@@ -80,19 +95,28 @@ class BlueFurry {
         *********************************************/
         char getBlueFurryDirection()const;
 
+        /********************************************
+         * 
+        *********************************************/
+        float getDisplayHealth()const;
+
     private:
         Texture2D npc_up;
         Texture2D npc_down;
         Texture2D npc_left;
         Texture2D npc_right;
         Texture2D npc_current;
+
         int PositionX;
         int PositionY;
         char direction;
         Rectangle Location;
+
         int movementTimer;
-        int totalHealth;
-        int currentHealth;
+        
+        float health;
+        float displayHealth;
+
         int level;
 };
 

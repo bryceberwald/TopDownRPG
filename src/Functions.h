@@ -15,6 +15,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <math.h>
 #include <unistd.h>
 #include <stdlib.h>     /* srand, rand */
 #include <time.h>       /* time */

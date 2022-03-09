@@ -42,22 +42,25 @@ int main(int argc, char* argv[])
     // GUI layout textures.
     Texture2D PreGameBackground = LoadTexture("resources/GUI/start-menu.png");
     Texture2D InGameBackground = LoadTexture("resources/GUI/background.png");
-    GameMenuScreen CurrentScreenDisplay = PreGameScreen;
+
+    GameMenuScreen CurrentScreenDisplay = PreGameScreen;  // enum type
 
     Texture2D BigButtonPressed = LoadTexture("resources/GUI/buttons/big_button_pressed.png");
     Texture2D BigButtonUnpressed = LoadTexture("resources/GUI/buttons/big_button_unpressed.png");
     Texture2D CurrentButtonTexture = BigButtonUnpressed;
 
-    InGameMenuOptions CurrentMenuOptions = INVENTORY;
+    InGameMenuOptions CurrentMenuOptions = INVENTORY; // enum type
 
     // Player Textures
     Texture2D HumanSpriteSheet = LoadTexture("resources/characters/human_spritesheet.png");
     Texture2D DemonSpriteSheet = LoadTexture("resources/characters/demon_spritesheet.png");
     Texture2D CurrentSpriteSheet = DemonSpriteSheet;
 
-    // Array of 10 Blue Furry Monsters on Village North Map.
-    const int MAX_BLUE_FURRYS = 20;
+    // Array of 25 Blue Furry Monsters on Village North Map.
+    const int MAX_BLUE_FURRYS = 25;
     BlueFurry BlueFurryArray[MAX_BLUE_FURRYS];
+    Vector2 BlueFurryCoordinatesVectorArray[MAX_BLUE_FURRYS];
+    int attackedFurryIndex= 0;
 
     // Variable determines which direction player is facing.
     char CharacterDirection = 'S';
@@ -70,8 +73,10 @@ int main(int argc, char* argv[])
     float FrameX = (float)CurrentSpriteSheet.width/8;
     float FrameY = (float)CurrentSpriteSheet.height/8;
 
+    // Variable holds the current frame of the spritesheet.
     Rectangle frameRec = { 0.0f, 0.0f, FrameX, FrameY };
 
+    // Variables used for player animation support
     bool attackMode = false;
     int attackAnimationTimer = 0;
     int walkingAnimationTimer = 0;
@@ -144,8 +149,6 @@ int main(int argc, char* argv[])
         // Variable holds X & Y coordinates of the player.
         Vector2 position = { (float)PlayerX, (float)PlayerY };
 
-        Rectangle PlayerLocation = {(float)PlayerX, (float)PlayerY, 32, 32};
-
         // Variables used for draw coordinates for rectangles on blocked locations.
         int recPositionX = 0;
         int recPositionY = 0;
@@ -210,42 +213,127 @@ int main(int argc, char* argv[])
                 break;
             case InGameScreen:
                 BeginMode2D(Camera);
+
                 ClearBackground(BLACK);
 
                 DrawTexture(CurrentMap, 0, 0, WHITE);                  // Draw map to the screen.
 
+                Rectangle CharacterSurroundingRec = {(float)PlayerX+24, (float)PlayerY+16, 14, 28};
+                //DrawRectanglePro(CharacterSurroundingRec, {0,0}, 0.0f, Fade(RED, 0.5f));
+
                 if(CurrentBounds == VILLAGE_NORTH){
-                    for(int i = 0; i < MAX_BLUE_FURRYS-1; i++){
+                    for(int i = 0; i < MAX_BLUE_FURRYS; i++){
+
                         DrawTexture(BlueFurryArray[i].getCurrentTexture(), BlueFurryArray[i].getPositionX(), BlueFurryArray[i].getPositionY(), WHITE);
+
+                        // Assign array values of type Vector2 with the coordinates of Blue Furry's on map.
+                        BlueFurryCoordinatesVectorArray[i] = {(float)BlueFurryArray[i].getPositionX()+16, (float)BlueFurryArray[i].getPositionY()+10};
+                        
                         BlueFurryArray[i].incrementMovementTimer();
+
                         if(BlueFurryArray[i].getMovementTimerValue() > 5){
+
                             int randomNumber = 1 + (rand() % 40);
-                            switch(randomNumber){
-                                case 1:
-                                    BlueFurryArray[i].moveBlueFurry("left");
-                                    break;
-                                case 2:
-                                    BlueFurryArray[i].moveBlueFurry("right");
-                                    break;
-                                case 3:
-                                    BlueFurryArray[i].moveBlueFurry("up");
-                                    break;
-                                case 4:
-                                    BlueFurryArray[i].moveBlueFurry("down");
-                                    break;
+
+                            float distance = pow( pow(BlueFurryCoordinatesVectorArray[i].x - (PlayerX+32), 2) + pow(BlueFurryCoordinatesVectorArray[i].y - (PlayerY+32), 2), 0.5f);
+                            
+                            // Check if any blue furrys are too close to the player, if so start randomly moving them in the other direction.
+                            if(distance < 100){
+                                if(PlayerX < BlueFurryArray[i].getPositionX() && PlayerY < BlueFurryArray[i].getPositionY()){
+                                    // NW or Quadrant #2 from Blue Furry's postion.
+                                    switch(randomNumber){
+                                        case 1:
+                                            BlueFurryArray[i].moveBlueFurry("right");
+                                            break;
+                                        case 2:
+                                            BlueFurryArray[i].moveBlueFurry("right");
+                                            break;
+                                        case 3:
+                                            BlueFurryArray[i].moveBlueFurry("down");
+                                            break;
+                                        case 4:
+                                            BlueFurryArray[i].moveBlueFurry("down");
+                                            break;
+                                    }
+                                // NE or Quadrant #1 from Blue Furry's postion.
+                                } else if(PlayerX > BlueFurryArray[i].getPositionX() && PlayerY < BlueFurryArray[i].getPositionY()){
+                                    switch(randomNumber){
+                                        case 1:
+                                            BlueFurryArray[i].moveBlueFurry("left");
+                                            break;
+                                        case 2:
+                                            BlueFurryArray[i].moveBlueFurry("left");
+                                            break;
+                                        case 3:
+                                            BlueFurryArray[i].moveBlueFurry("down");
+                                            break;
+                                        case 4:
+                                            BlueFurryArray[i].moveBlueFurry("down");
+                                            break;
+                                    }
+                                // SW or Quadrant #3 from Blue Furry's postion.
+                                } else if(PlayerX < BlueFurryArray[i].getPositionX() && PlayerY > BlueFurryArray[i].getPositionY()){
+                                    switch(randomNumber){
+                                        case 1:
+                                            BlueFurryArray[i].moveBlueFurry("right");
+                                            break;
+                                        case 2:
+                                            BlueFurryArray[i].moveBlueFurry("right");
+                                            break;
+                                        case 3:
+                                            BlueFurryArray[i].moveBlueFurry("up");
+                                            break;
+                                        case 4:
+                                            BlueFurryArray[i].moveBlueFurry("up");
+                                            break;
+                                    }
+                                // SE or Quadrant #4 from Blue Furry's postion.
+                                } else if(PlayerX > BlueFurryArray[i].getPositionX() && PlayerY > BlueFurryArray[i].getPositionY()){
+                                    switch(randomNumber){
+                                        case 1:
+                                            BlueFurryArray[i].moveBlueFurry("left");
+                                            break;
+                                        case 2:
+                                            BlueFurryArray[i].moveBlueFurry("left");
+                                            break;
+                                        case 3:
+                                            BlueFurryArray[i].moveBlueFurry("up");
+                                            break;
+                                        case 4:
+                                            BlueFurryArray[i].moveBlueFurry("up");
+                                            break;
+                                    }
+                                }
+                            } else {
+                                switch(randomNumber){
+                                    case 1:
+                                        BlueFurryArray[i].moveBlueFurry("left");
+                                        break;
+                                    case 2:
+                                        BlueFurryArray[i].moveBlueFurry("right");
+                                        break;
+                                    case 3:
+                                        BlueFurryArray[i].moveBlueFurry("up");
+                                        break;
+                                    case 4:
+                                        BlueFurryArray[i].moveBlueFurry("down");
+                                        break;
+                                }
                             }
                             BlueFurryArray[i].setMovementTimer(0);
-                        }
-                    }
-
-                    for(int i = 0; i < MAX_BLUE_FURRYS-1; i++){
-                        if(CheckCollisionRecs(PlayerLocation, BlueFurryArray[i].getBlueFurryLocation())){
-                            DrawText("TESTING", PlayerX, PlayerY, 30, BLUE);
                         }
                     }
                 }
 
                 DrawTextureRec(CurrentSpriteSheet, frameRec, position, WHITE);  // Draw player to the screen.
+                
+                // Draw Blue Furry health bar and level after player spritesheet to fix the overlapping issue.
+                for(int i = 0; i < MAX_BLUE_FURRYS; i++){
+                    DrawText("Level 1", BlueFurryArray[i].getPositionX(),BlueFurryArray[i].getPositionY()-25,6, WHITE);
+                    DrawRectangle(BlueFurryArray[i].getPositionX(), BlueFurryArray[i].getPositionY()-10, 30, 5, Fade(BLACK, 0.5f));
+                    DrawRectangle(BlueFurryArray[i].getPositionX(), BlueFurryArray[i].getPositionY()-10, (int)BlueFurryArray[i].getDisplayHealth(), 5, RED);
+                    DrawRectangleLines(BlueFurryArray[i].getPositionX(), BlueFurryArray[i].getPositionY()-10, 30, 5, BLACK);
+                }
 
                 // Draw blocked locations for the current map.
                 for (int i = 0; i < ROW_SIZE; i++) {
@@ -563,8 +651,6 @@ int main(int argc, char* argv[])
                         totalBlockedLocations = 0;
                     }
 
-
-
                 } else if (CurrentBounds == VILLAGE_WEST) {
                     //LEFT
                     if(PlayerX < -25) {
@@ -684,6 +770,56 @@ int main(int argc, char* argv[])
                         // Reset blocked locations to zero.
                         totalBlockedLocations = 0;
                     }
+
+                    // Check for Player Collision against Blue Furry's on North Map.
+                    for(int i = 0; i < MAX_BLUE_FURRYS; i++){
+                        if(CheckCollisionCircleRec(BlueFurryCoordinatesVectorArray[i], 9, CharacterSurroundingRec)){
+                            attackedFurryIndex = i;
+                            if(CharacterDirection == 'E'){
+                                PlayerX -= 3;
+                                CameraX -= 5;
+                            } else if(CharacterDirection == 'W'){
+                                PlayerX += 3;
+                                CameraX += 5;
+                            } else if(CharacterDirection == 'N'){
+                                PlayerY += 3;
+                                CameraY += 5;
+                            } else if(CharacterDirection == 'S'){
+                                PlayerY -= 3;
+                                CameraY -= 5;
+                            }
+                        }
+                    }
+
+                    float PlayerToFurryDistance = pow( pow(BlueFurryCoordinatesVectorArray[attackedFurryIndex].x - (PlayerX+32), 2) + pow(BlueFurryCoordinatesVectorArray[attackedFurryIndex].y - (PlayerY+32), 2), 0.5f);
+                    int randomAttack = 1 + (rand() % 5);
+
+                    // Check if player is attacking a blue furry within distance.
+                    if((CharacterDirection == 'S') && PlayerToFurryDistance < 28 && IsKeyPressed(KEY_Z)){
+                        if(randomAttack == 1){
+                            BlueFurryArray[attackedFurryIndex].updateHP(0.5);
+                        }
+                    } else if ((CharacterDirection == 'E') && PlayerToFurryDistance < 26 && (IsKeyDown(KEY_Z) || IsKeyPressed(KEY_Z))){
+                        if(randomAttack == 1){
+                            BlueFurryArray[attackedFurryIndex].updateHP(0.5);
+                        }
+                    } else if ((CharacterDirection == 'W') && PlayerToFurryDistance < 26 && (IsKeyDown(KEY_Z) || IsKeyPressed(KEY_Z))){
+                        if(randomAttack == 1){
+                            BlueFurryArray[attackedFurryIndex].updateHP(0.5);
+                        }
+                    } else if ((CharacterDirection == 'N') && PlayerToFurryDistance < 28 && (IsKeyDown(KEY_Z) || IsKeyPressed(KEY_Z))){
+                        if(!(PlayerX < BlueFurryArray[attackedFurryIndex].getPositionX() && PlayerY < BlueFurryArray[attackedFurryIndex].getPositionY()) && !(PlayerX > BlueFurryArray[attackedFurryIndex].getPositionX() && PlayerY < BlueFurryArray[attackedFurryIndex].getPositionY())){
+                            if(randomAttack == 1){
+                                BlueFurryArray[attackedFurryIndex].updateHP(0.5);
+                            }
+                        }
+                    }
+
+                    // Check if Furry being attacked has died yet... health = zero check!
+                    if(BlueFurryArray[attackedFurryIndex].getHealth() <= 0){
+                        BlueFurryArray[attackedFurryIndex].respawnBlueFurry();
+                    }
+
                 } else if(CurrentBounds == VILLAGE_SOUTH) {
                     // LEFT
                     if(PlayerX < -25) {
@@ -831,9 +967,12 @@ int main(int argc, char* argv[])
 
     // De-Initialization
     //--------------------------------------------------------------------------------------
+    
+    // Unload Spritesheets
     UnloadTexture(HumanSpriteSheet);
     UnloadTexture(CurrentSpriteSheet);
 
+    // Unload map images
     UnloadTexture(VillageMain);
     UnloadTexture(VillageNorth);
     UnloadTexture(VillageSouth);
@@ -841,8 +980,11 @@ int main(int argc, char* argv[])
     UnloadTexture(VillageWest);
     UnloadTexture(CurrentMap);
 
+    // Unload GUI content
     UnloadTexture(PreGameBackground);
     UnloadTexture(InGameBackground);
+    UnloadTexture(BigButtonPressed);
+    UnloadTexture(BigButtonUnpressed);
 
     CloseWindow();                // Close window and OpenGL context
     //--------------------------------------------------------------------------------------

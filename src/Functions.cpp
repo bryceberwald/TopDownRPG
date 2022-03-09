@@ -8,7 +8,10 @@
 #include "Functions.h"
 
 /* ************************************************************
- * Function description goes here...
+ * This is a helper function for reading in blocked locations
+ * from an input file. The function will check to ensure that 
+ * all ones and zeros have been read from the file and nothing
+ * else. A negative 1 will be returned otherwise.
  **************************************************************/
 int LocationsFromFile(int binaryDigit){
 
