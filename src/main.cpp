@@ -60,22 +60,27 @@ int main(int argc, char* argv[])
     const int MAX_BLUE_FURRYS = 25;
     BlueFurry BlueFurryArray[MAX_BLUE_FURRYS];
     Vector2 BlueFurryCoordinatesVectorArray[MAX_BLUE_FURRYS];
-    int attackedFurryIndex= 0;
+    int attackedFurryIndex= -1;
 
     // Variable determines which direction player is facing.
     char CharacterDirection = 'S';
 
     /* Player/Character Database contents temporarily */
     struct CharacterDatabase {
+        string Name;
         int CombatLVL;
         int StrengthLVL;
         float TotalHealth;
     };
     CharacterDatabase CharacterPlaying;
+    CharacterPlaying.Name = "Player Name";
     CharacterPlaying.CombatLVL = 1;
     CharacterPlaying.StrengthLVL = 1;
-    CharacterPlaying.TotalHealth = 10;
+    CharacterPlaying.TotalHealth = 90;
     /* End of Player/Character Database contents */
+
+    bool npcShouldAttackCharacter = false;  // Determine's if player has attacked to attack back.
+    int hpRestoreCounter = 0;               // Helps delay health restore after combat.
 
     // Control Player X & Y coordinates with these variables.
     int PlayerX = ScreenWidth / 2;
@@ -164,6 +169,9 @@ int main(int argc, char* argv[])
         // Variable holds the damage amount that the player can currently hit.
         float damageAmount = CharacterPlaying.CombatLVL * CharacterPlaying.StrengthLVL;
 
+        // Variable holds the width value of the health bar rectangle for health display in top-left corner.
+        float charactersCurrentDisplayHealth = CharacterPlaying.TotalHealth * 2.0;
+
         // Variables used for draw coordinates for rectangles on blocked locations.
         int recPositionX = 0;
         int recPositionY = 0;
@@ -246,7 +254,7 @@ int main(int argc, char* argv[])
                         
                         BlueFurryArray[i].incrementMovementTimer();
 
-                        if(BlueFurryArray[i].getMovementTimerValue() > 5){
+                        if(BlueFurryArray[i].getMovementTimerValue() > 5 &&  i != attackedFurryIndex){
 
                             int randomNumber = 1 + (rand() % 40);
 
@@ -341,6 +349,9 @@ int main(int argc, char* argv[])
                 }
 
                 DrawTextureRec(CurrentSpriteSheet, frameRec, position, WHITE);  // Draw player to the screen.
+
+                // Draw name above the character.
+               //DrawText(CharacterPlaying.Name.c_str(), PlayerX, PlayerY-5 , 4, WHITE);
                 
                 // Draw Blue Furry health bar and level after player spritesheet to fix the overlapping issue.
                 for(int i = 0; i < MAX_BLUE_FURRYS; i++){
@@ -827,26 +838,55 @@ int main(int argc, char* argv[])
                     if((CharacterDirection == 'S') && PlayerToFurryDistance < 28 && IsKeyPressed(KEY_Z)){
                         if(randomAttack == 1){
                             BlueFurryArray[attackedFurryIndex].updateHP(totalDamageAmount);
+                            npcShouldAttackCharacter = true;
                         }
                     } else if ((CharacterDirection == 'E') && PlayerToFurryDistance < 26 && (IsKeyDown(KEY_Z) || IsKeyPressed(KEY_Z))){
                         if(randomAttack == 1){
                             BlueFurryArray[attackedFurryIndex].updateHP(totalDamageAmount);
+                            npcShouldAttackCharacter = true;
                         }
                     } else if ((CharacterDirection == 'W') && PlayerToFurryDistance < 26 && (IsKeyDown(KEY_Z) || IsKeyPressed(KEY_Z))){
                         if(randomAttack == 1){
                             BlueFurryArray[attackedFurryIndex].updateHP(totalDamageAmount);
+                            npcShouldAttackCharacter = true;
                         }
                     } else if ((CharacterDirection == 'N') && PlayerToFurryDistance < 28 && (IsKeyDown(KEY_Z) || IsKeyPressed(KEY_Z))){
                         if(!(PlayerX < BlueFurryArray[attackedFurryIndex].getPositionX() && PlayerY < BlueFurryArray[attackedFurryIndex].getPositionY()) && !(PlayerX > BlueFurryArray[attackedFurryIndex].getPositionX() && PlayerY < BlueFurryArray[attackedFurryIndex].getPositionY())){
                             if(randomAttack == 1){
                                 BlueFurryArray[attackedFurryIndex].updateHP(totalDamageAmount);
+                                npcShouldAttackCharacter = true;
                             }
+                        }
+                    }
+
+                    if(IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_UP) || IsKeyDown(KEY_DOWN)){
+                        npcShouldAttackCharacter = false;
+                        attackedFurryIndex = -1;
+                    }
+
+                    // Check if player has attacked npc to have player get attacked back.
+                    if(npcShouldAttackCharacter){
+                        int randomNum = 1 + (rand() % 15);
+                        BlueFurryArray[attackedFurryIndex].faceBlueFurryToPlayer(CharacterDirection);
+                        if(randomNum == 3){
+                            float damageToPlayer = BlueFurryArray[attackedFurryIndex].getDamageAmount();
+                            CharacterPlaying.TotalHealth -= damageToPlayer;
+                        }
+                        hpRestoreCounter = 0;
+
+                    } else {
+                        // Restore HP
+                        hpRestoreCounter++;
+                        if(hpRestoreCounter > 1000){
+                            CharacterPlaying.TotalHealth = 90;
+                            hpRestoreCounter = 0;
                         }
                     }
 
                     // Check if Furry being attacked has died yet... health = zero check!
                     if(BlueFurryArray[attackedFurryIndex].getHealth() <= 0){
                         BlueFurryArray[attackedFurryIndex].respawnBlueFurry();
+                        npcShouldAttackCharacter = false;
                     }
 
                 } else if(CurrentBounds == VILLAGE_SOUTH) {
@@ -893,6 +933,8 @@ int main(int argc, char* argv[])
                 }
 
                 DrawTexture(InGameBackground, 0, 0, WHITE);
+
+                DrawRectangle(150, 25, (int)charactersCurrentDisplayHealth, 5, RED);
 
                 // Right-Top Big Button!
                 if(mouseX >= 105 && mouseX <= 334 && mouseY >= 485 && mouseY <= 532){

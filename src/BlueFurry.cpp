@@ -101,6 +101,31 @@ void BlueFurry::respawnBlueFurry(){
 /*****************************************************
  * 
 *****************************************************/
+void BlueFurry::faceBlueFurryToPlayer(char playerDirection){
+    switch (playerDirection)
+    {
+    case 'N':
+        this->npc_current = npc_down;
+        break;
+    case 'S':
+        this->npc_current = npc_up;
+        break;
+    case 'E':
+        this->npc_current = npc_left;
+        break;
+    case 'W':
+        this->npc_current = npc_right;
+        break;
+    
+    default:
+        break;
+    }
+}
+
+
+/*****************************************************
+ * 
+*****************************************************/
 void BlueFurry::setMovementTimer(int value){
     this->movementTimer = value;
 }
@@ -182,4 +207,12 @@ float BlueFurry::getDisplayHealth()const{
 *********************************************/
 int BlueFurry::getLevel()const{
     return this->level;
+}
+
+
+/********************************************
+ * 
+*********************************************/
+float BlueFurry::getDamageAmount()const{
+    return level * 0.5;
 }
