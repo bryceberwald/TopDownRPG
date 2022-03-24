@@ -10,7 +10,7 @@ var usersRouter = require('./routes/users');
 
 /************************************************************************/
 var db = mongoose.connection;
-var mongoDB = 'mongodb+srv://bryceberwald:Student777@savages-online.qk92i.mongodb.net/SavagesDB?retryWrites=true&w=majority';
+var mongoDB = 'mongodb+srv://<username>:<password>@savages-online.qk92i.mongodb.net/<database>?retryWrites=true&w=majority';
 
 mongoose.connect(mongoDB, {useNewUrlParser: true, useUnifiedTopology: true});
 
