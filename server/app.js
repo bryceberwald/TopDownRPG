@@ -3,9 +3,24 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var mongoose = require('mongoose');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+
+/************************************************************************/
+var db = mongoose.connection;
+var mongoDB = 'mongodb+srv://bryceberwald:Student777@savages-online.qk92i.mongodb.net/SavagesDB?retryWrites=true&w=majority';
+
+mongoose.connect(mongoDB, {useNewUrlParser: true, useUnifiedTopology: true});
+
+db.on('error', console.error.bind(console, 'Database Connection Error'));
+
+db.once("open", function () {
+  console.log("Savages-Online Database Connected successfully");
+});
+
+/************************************************************************/
 
 var app = express();
 
